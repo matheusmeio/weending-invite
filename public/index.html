@@ -109,6 +109,15 @@
 
     window.addEventListener('DOMContentLoaded', carregarConvite);
     window.addEventListener('hashchange', carregarConvite);
+
+    appContainer.innerHTML = `
+      <iframe 
+        src="${iframeSrc}" 
+        allow="autoplay; fullscreen; clipboard-write" 
+        allowfullscreen="allowfullscreen" 
+        scrolling="no">
+      </iframe>
+    `;
   </script>
 </body>
 </html>
