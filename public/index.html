@@ -18,8 +18,19 @@
       background-color: #0d0d11;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+    }
+
+    /* Container Principal */
+    .main-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .iframe-container, iframe {
@@ -28,29 +39,29 @@
       border: none;
     }
 
-    /* Botão Flutuante de Áudio */
+    /* Botão de Som Ajustado (Fica ao lado/topo do convite) */
     .audio-btn {
-      position: fixed;
-      top: 15px;
+      position: absolute;
+      top: 12px;
       right: 15px;
       z-index: 9999;
-      background: rgba(13, 13, 17, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(20, 20, 25, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       color: #ffffff;
-      padding: 8px 14px;
-      border-radius: 30px;
+      padding: 6px 12px;
+      border-radius: 20px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       display: flex;
       align-items: center;
       gap: 6px;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      transition: all 0.2s ease;
     }
 
     .audio-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.25);
     }
 
     .status-card {
@@ -61,7 +72,7 @@
       text-align: center;
       color: #ffffff;
       max-width: 380px;
-      margin: 20px;
+      margin: auto;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
@@ -83,28 +94,26 @@
 </head>
 <body>
 
-  <!-- Áudio em Segundo Plano -->
+  <!-- Tag de Áudio com volume inicial controlado -->
   <audio id="bg-music" loop preload="auto">
     <source src="musica.mp3" type="audio/mpeg">
   </audio>
-
-  <!-- Botão de Áudio -->
-  <button id="audio-control" class="audio-btn hidden" onclick="toggleAudio()">
-    <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
-  </button>
 
   <div id="not-found" class="status-card hidden">
     <h1>Convite não encontrado 💌</h1>
     <p>O link acessado não possui um convite ativo. Verifique o endereço digitado.</p>
   </div>
 
-  <div id="app" class="iframe-container hidden"></div>
+  <div id="main-content" class="main-wrapper hidden">
+    <!-- Botão do Som alinhado junto ao iFrame -->
+    <button id="audio-control" class="audio-btn" onclick="toggleAudio()">
+      <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
+    </button>
+
+    <div id="app" class="iframe-container"></div>
+  </div>
 
   <script>
-    // =========================================================
-    // DICIONÁRIO DE CLIENTES
-    // "nome-do-cliente": "ID_DO_HEYZINE"
-    // =========================================================
     const clientes = {
       "matheus-e-beatriz": "a1aceea4c3",
       "mariana-e-pedro": "abc123xyz"
@@ -115,6 +124,21 @@
     const audioIcon = document.getElementById('audio-icon');
     let audioIniciado = false;
 
+    // Define o volume inicial baixo (0.2 = 20% do volume máximo)
+    audio.volume = 0.2; 
+
+    function tentarTocarAudio() {
+      if (!audioIniciado) {
+        audio.play().then(() => {
+          audioIniciado = true;
+          audioIcon.innerText = "🔊";
+        }).catch(err => {
+          // Bloqueado pelo navegador até o primeiro clique
+          console.log("Autoplay retido pelo navegador:", err);
+        });
+      }
+    }
+
     function carregarConvite() {
       const params = new URLSearchParams(window.location.search);
       let clienteKey = params.get('c');
@@ -123,6 +147,7 @@
         clienteKey = window.location.hash.replace('#', '');
       }
 
+      const mainContent = document.getElementById('main-content');
       const appContainer = document.getElementById('app');
       const notFoundCard = document.getElementById('not-found');
 
@@ -133,33 +158,25 @@
         appContainer.innerHTML = `
           <iframe 
             src="${iframeSrc}" 
-            allow="fullscreen *; clipboard-write *" 
+            allow="autoplay *; fullscreen *; clipboard-write *" 
             allowfullscreen="allowfullscreen" 
             scrolling="no">
           </iframe>
         `;
-        appContainer.classList.remove('hidden');
-        audioBtn.classList.remove('hidden');
+        
+        mainContent.classList.remove('hidden');
         notFoundCard.classList.add('hidden');
 
-        // Toca o som no primeiro toque/clique da tela
-        document.body.addEventListener('click', iniciarAudioNoClique, { once: true });
-        document.body.addEventListener('touchstart', iniciarAudioNoClique, { once: true });
-      } else {
-        appContainer.classList.add('hidden');
-        audioBtn.classList.add('hidden');
-        notFoundCard.classList.remove('hidden');
-      }
-    }
+        // Tenta iniciar a música imediatamente ao carregar
+        tentarTocarAudio();
 
-    function iniciarAudioNoClique() {
-      if (!audioIniciado) {
-        audio.play().then(() => {
-          audioIniciado = true;
-          audioIcon.innerText = "🔊";
-        }).catch(err => {
-          console.log("Aguardando interação do usuário para reproduzir áudio:", err);
-        });
+        // Caso o navegador exija toque/clique prévio, inicia no primeiro toque em qualquer lugar
+        document.addEventListener('click', tentarTocarAudio, { once: true });
+        document.addEventListener('touchstart', tentarTocarAudio, { once: true });
+
+      } else {
+        mainContent.classList.add('hidden');
+        notFoundCard.classList.remove('hidden');
       }
     }
 
