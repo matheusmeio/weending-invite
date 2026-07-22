@@ -28,6 +28,31 @@
       border: none;
     }
 
+    /* Botão Flutuante de Áudio */
+    .audio-btn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 9999;
+      background: rgba(13, 13, 17, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 14px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+
+    .audio-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
     .status-card {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -58,6 +83,16 @@
 </head>
 <body>
 
+  <!-- Áudio em Segundo Plano -->
+  <audio id="bg-music" loop preload="auto">
+    <source src="musica.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Botão de Áudio -->
+  <button id="audio-control" class="audio-btn hidden" onclick="toggleAudio()">
+    <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
+  </button>
+
   <div id="not-found" class="status-card hidden">
     <h1>Convite não encontrado 💌</h1>
     <p>O link acessado não possui um convite ativo. Verifique o endereço digitado.</p>
@@ -68,13 +103,17 @@
   <script>
     // =========================================================
     // DICIONÁRIO DE CLIENTES
-    // Adicione novos clientes aqui:
     // "nome-do-cliente": "ID_DO_HEYZINE"
     // =========================================================
     const clientes = {
       "matheus-e-beatriz": "a1aceea4c3",
       "mariana-e-pedro": "abc123xyz"
     };
+
+    const audio = document.getElementById('bg-music');
+    const audioBtn = document.getElementById('audio-control');
+    const audioIcon = document.getElementById('audio-icon');
+    let audioIniciado = false;
 
     function carregarConvite() {
       const params = new URLSearchParams(window.location.search);
@@ -94,30 +133,48 @@
         appContainer.innerHTML = `
           <iframe 
             src="${iframeSrc}" 
-            allow="autoplay; fullscreen; clipboard-write" 
+            allow="fullscreen *; clipboard-write *" 
             allowfullscreen="allowfullscreen" 
             scrolling="no">
           </iframe>
         `;
         appContainer.classList.remove('hidden');
+        audioBtn.classList.remove('hidden');
         notFoundCard.classList.add('hidden');
+
+        // Toca o som no primeiro toque/clique da tela
+        document.body.addEventListener('click', iniciarAudioNoClique, { once: true });
+        document.body.addEventListener('touchstart', iniciarAudioNoClique, { once: true });
       } else {
         appContainer.classList.add('hidden');
+        audioBtn.classList.add('hidden');
         notFoundCard.classList.remove('hidden');
+      }
+    }
+
+    function iniciarAudioNoClique() {
+      if (!audioIniciado) {
+        audio.play().then(() => {
+          audioIniciado = true;
+          audioIcon.innerText = "🔊";
+        }).catch(err => {
+          console.log("Aguardando interação do usuário para reproduzir áudio:", err);
+        });
+      }
+    }
+
+    function toggleAudio() {
+      if (audio.paused) {
+        audio.play();
+        audioIcon.innerText = "🔊";
+      } else {
+        audio.pause();
+        audioIcon.innerText = "🔇";
       }
     }
 
     window.addEventListener('DOMContentLoaded', carregarConvite);
     window.addEventListener('hashchange', carregarConvite);
-
-    appContainer.innerHTML = `
-      <iframe 
-        src="${iframeSrc}" 
-        allow="autoplay; fullscreen; clipboard-write" 
-        allowfullscreen="allowfullscreen" 
-        scrolling="no">
-      </iframe>
-    `;
   </script>
 </body>
 </html>
