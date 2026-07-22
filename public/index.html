@@ -104,35 +104,41 @@
 
       if (clienteKey && clientes[clienteKey]) {
         const heyzineId = clientes[clienteKey];
-        appContainer.innerHTML = `<iframe src="https://heyzine.com/flip-book/${heyzineId}.html" scrolling="no"></iframe>`;
+        appContainer.innerHTML = `<iframe src="https://heyzine.com/flip-book/${heyzineId}.html" allow="autoplay; fullscreen" scrolling="no"></iframe>`;
         audioBtn.classList.remove('hidden');
         
-        // Tenta tocar no PC automaticamente
+        // Tenta tocar automático no PC
         audio.play().then(() => {
           audioIniciado = true;
           audioIcon.innerText = "🔊";
-          triggerInvisivel.classList.add('hidden'); // Se tocou automático, não precisa do vidro
+          triggerInvisivel.classList.add('hidden'); // Some com o vidro se já tocou
         }).catch(() => {
-          // Se o navegador bloqueou (celular), deixa o vidro transparente lá esperando o toque
-          console.log("Autoplay bloqueado. Aguardando toque no vidro invisível...");
+          console.log("Aguardando o toque no vidro...");
         });
       }
     }
 
-    // A mágica acontece aqui: captura o toque no vidro transparente
-    function iniciarAudioHack() {
+    // A MÁGICA CORRIGIDA
+    function iniciarAudioHack(event) {
+      // Previne duplo disparo caso o celular leia click e touchend ao mesmo tempo
+      if (event) event.preventDefault(); 
+
       if (!audioIniciado) {
-        audio.play();
-        audioIniciado = true;
-        audioIcon.innerText = "🔊";
+        // Agora ele SÓ muda o ícone e tira o vidro SE a música tocar de verdade
+        audio.play().then(() => {
+          audioIniciado = true;
+          audioIcon.innerText = "🔊";
+          triggerInvisivel.classList.add('hidden'); // Destrói o vidro
+        }).catch((err) => {
+          console.log("Celular bloqueou a tentativa:", err);
+          // Se falhar, o vidro continua lá para ele tentar de novo
+        });
       }
-      // SOME com o vidro para o usuário poder mexer no convite
-      triggerInvisivel.classList.add('hidden');
     }
 
-    // Ouve toques e cliques no vidro transparente
-    triggerInvisivel.addEventListener('touchstart', iniciarAudioHack, { once: true });
-    triggerInvisivel.addEventListener('click', iniciarAudioHack, { once: true });
+    // Usando touchend e click, que são aprovados pelos bloqueadores de celular
+    triggerInvisivel.addEventListener('touchend', iniciarAudioHack);
+    triggerInvisivel.addEventListener('click', iniciarAudioHack);
 
     function toggleAudio() {
       if (audio.paused) {
