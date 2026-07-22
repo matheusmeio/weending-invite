@@ -17,25 +17,24 @@
       overflow: hidden;
       background-color: #0d0d11;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Container Principal do Convite */
-    .main-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     .iframe-container, iframe {
       width: 100%;
       height: 100%;
       border: none;
+    }
+
+    /* O Truque: Uma camada transparente que cobre a tela toda */
+    .hack-invisivel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 99999; /* Fica por cima de tudo */
+      background: transparent;
+      cursor: pointer;
     }
 
     /* Botão de Som Flutuante Discreto */
@@ -55,36 +54,6 @@
       align-items: center;
       gap: 6px;
       backdrop-filter: blur(10px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      transition: all 0.2s ease;
-    }
-
-    .audio-btn:hover {
-      background: rgba(255, 255, 255, 0.25);
-    }
-
-    /* Card de Erro */
-    .status-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 30px;
-      border-radius: 16px;
-      text-align: center;
-      color: #ffffff;
-      max-width: 380px;
-      margin: auto;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .status-card h1 {
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-
-    .status-card p {
-      font-size: 14px;
-      color: #a0a0ab;
-      line-height: 1.4;
     }
 
     .hidden {
@@ -94,25 +63,20 @@
 </head>
 <body>
 
-  <!-- Elemento de Áudio HTML5 -->
+  <!-- Áudio -->
   <audio id="bg-music" loop preload="auto">
     <source src="musica.mp3" type="audio/mpeg">
   </audio>
 
-  <!-- Tela de Erro -->
-  <div id="not-found" class="status-card hidden">
-    <h1>Convite não encontrado 💌</h1>
-    <p>O link acessado não possui um convite ativo. Verifique o endereço digitado.</p>
-  </div>
+  <!-- Camada que rouba o primeiro clique para tocar a música -->
+  <div id="trigger-invisivel" class="hack-invisivel"></div>
 
-  <!-- Estrutura Direta do Convite -->
-  <div id="main-content" class="main-wrapper hidden">
-    <button id="audio-control" class="audio-btn" onclick="toggleAudio()">
-      <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
-    </button>
+  <!-- Botão de controle de áudio -->
+  <button id="audio-control" class="audio-btn hidden" onclick="toggleAudio()">
+    <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
+  </button>
 
-    <div id="app" class="iframe-container"></div>
-  </div>
+  <div id="app" class="iframe-container"></div>
 
   <script>
     const clientes = {
@@ -121,25 +85,12 @@
     };
 
     const audio = document.getElementById('bg-music');
+    const triggerInvisivel = document.getElementById('trigger-invisivel');
+    const audioBtn = document.getElementById('audio-control');
     const audioIcon = document.getElementById('audio-icon');
-    const mainContent = document.getElementById('main-content');
-    const notFoundCard = document.getElementById('not-found');
-
-    // Volume Suave em 20%
-    audio.volume = 0.2;
-
     let audioIniciado = false;
 
-    function tocarAudio() {
-      if (!audioIniciado) {
-        audio.play().then(() => {
-          audioIniciado = true;
-          audioIcon.innerText = "🔊";
-        }).catch(err => {
-          console.log("Aguardando o primeiro toque do usuário no celular:", err);
-        });
-      }
-    }
+    audio.volume = 0.2;
 
     function carregarConvite() {
       const params = new URLSearchParams(window.location.search);
@@ -153,32 +104,35 @@
 
       if (clienteKey && clientes[clienteKey]) {
         const heyzineId = clientes[clienteKey];
-        const iframeSrc = `https://heyzine.com/flip-book/${heyzineId}.html`;
-
-        appContainer.innerHTML = `
-          <iframe 
-            src="${iframeSrc}" 
-            allow="autoplay *; fullscreen *; clipboard-write *" 
-            allowfullscreen="allowfullscreen" 
-            scrolling="no">
-          </iframe>
-        `;
+        appContainer.innerHTML = `<iframe src="https://heyzine.com/flip-book/${heyzineId}.html" scrolling="no"></iframe>`;
+        audioBtn.classList.remove('hidden');
         
-        mainContent.classList.remove('hidden');
-        notFoundCard.classList.add('hidden');
-
-        // Tenta iniciar a música direto
-        tocarAudio();
-
-        // No celular, caso o navegador bloqueie, inicia no primeiro toque/clique no convite
-        document.body.addEventListener('click', tocarAudio, { once: true });
-        document.body.addEventListener('touchstart', tocarAudio, { once: true });
-
-      } else {
-        mainContent.classList.add('hidden');
-        notFoundCard.classList.remove('hidden');
+        // Tenta tocar no PC automaticamente
+        audio.play().then(() => {
+          audioIniciado = true;
+          audioIcon.innerText = "🔊";
+          triggerInvisivel.classList.add('hidden'); // Se tocou automático, não precisa do vidro
+        }).catch(() => {
+          // Se o navegador bloqueou (celular), deixa o vidro transparente lá esperando o toque
+          console.log("Autoplay bloqueado. Aguardando toque no vidro invisível...");
+        });
       }
     }
+
+    // A mágica acontece aqui: captura o toque no vidro transparente
+    function iniciarAudioHack() {
+      if (!audioIniciado) {
+        audio.play();
+        audioIniciado = true;
+        audioIcon.innerText = "🔊";
+      }
+      // SOME com o vidro para o usuário poder mexer no convite
+      triggerInvisivel.classList.add('hidden');
+    }
+
+    // Ouve toques e cliques no vidro transparente
+    triggerInvisivel.addEventListener('touchstart', iniciarAudioHack, { once: true });
+    triggerInvisivel.addEventListener('click', iniciarAudioHack, { once: true });
 
     function toggleAudio() {
       if (audio.paused) {
@@ -191,7 +145,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', carregarConvite);
-    window.addEventListener('hashchange', carregarConvite);
   </script>
 </body>
 </html>
