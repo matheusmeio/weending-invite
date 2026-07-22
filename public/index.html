@@ -22,83 +22,7 @@
       justify-content: center;
     }
 
-    /* Tela de Boas-Vindas (Envelope Virtual) */
-    .welcome-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, #1a1a24 0%, #0d0d11 100%);
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 20px;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
-    }
-
-    .welcome-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 40px 25px;
-      border-radius: 24px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-      max-width: 340px;
-      width: 100%;
-    }
-
-    .welcome-icon {
-      font-size: 42px;
-      margin-bottom: 15px;
-      display: inline-block;
-      animation: pulse 2s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-    }
-
-    .welcome-title {
-      color: #ffffff;
-      font-size: 20px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
-    }
-
-    .welcome-subtitle {
-      color: #a0a0ab;
-      font-size: 13px;
-      margin-bottom: 25px;
-      line-height: 1.4;
-    }
-
-    .btn-open {
-      background: #ffffff;
-      color: #0d0d11;
-      border: none;
-      padding: 14px 28px;
-      border-radius: 30px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
-      transition: transform 0.2s ease, background-color 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-open:active {
-      transform: scale(0.96);
-    }
-
-    /* Container do Convite */
+    /* Container Principal do Convite */
     .main-wrapper {
       position: relative;
       width: 100%;
@@ -114,7 +38,7 @@
       border: none;
     }
 
-    /* Botão de Som Flutuante */
+    /* Botão de Som Flutuante Discreto */
     .audio-btn {
       position: absolute;
       top: 12px;
@@ -135,6 +59,11 @@
       transition: all 0.2s ease;
     }
 
+    .audio-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Card de Erro */
     .status-card {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -161,28 +90,14 @@
     .hidden {
       display: none !important;
     }
-
-    .fade-out {
-      opacity: 0;
-      visibility: hidden;
-    }
   </style>
 </head>
 <body>
 
-  <!-- Áudio em Segundo Plano -->
+  <!-- Elemento de Áudio HTML5 -->
   <audio id="bg-music" loop preload="auto">
     <source src="musica.mp3" type="audio/mpeg">
   </audio>
-
-  <!-- Tela de Abertura (Garante a música no Celular) -->
-  <div id="welcome-screen" class="welcome-overlay hidden">
-    <div class="welcome-card">
-      <button class="btn-open" onclick="abrirConvite()">
-        <span>Abrir</span>
-      </button>
-    </div>
-  </div>
 
   <!-- Tela de Erro -->
   <div id="not-found" class="status-card hidden">
@@ -190,10 +105,10 @@
     <p>O link acessado não possui um convite ativo. Verifique o endereço digitado.</p>
   </div>
 
-  <!-- Conteúdo do Convite -->
+  <!-- Estrutura Direta do Convite -->
   <div id="main-content" class="main-wrapper hidden">
     <button id="audio-control" class="audio-btn" onclick="toggleAudio()">
-      <span id="audio-icon">🔊</span> <span id="audio-text">Música</span>
+      <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
     </button>
 
     <div id="app" class="iframe-container"></div>
@@ -207,12 +122,24 @@
 
     const audio = document.getElementById('bg-music');
     const audioIcon = document.getElementById('audio-icon');
-    const welcomeScreen = document.getElementById('welcome-screen');
     const mainContent = document.getElementById('main-content');
     const notFoundCard = document.getElementById('not-found');
 
-    // Volume Suave (20%)
+    // Volume Suave em 20%
     audio.volume = 0.2;
+
+    let audioIniciado = false;
+
+    function tocarAudio() {
+      if (!audioIniciado) {
+        audio.play().then(() => {
+          audioIniciado = true;
+          audioIcon.innerText = "🔊";
+        }).catch(err => {
+          console.log("Aguardando o primeiro toque do usuário no celular:", err);
+        });
+      }
+    }
 
     function carregarConvite() {
       const params = new URLSearchParams(window.location.search);
@@ -231,37 +158,26 @@
         appContainer.innerHTML = `
           <iframe 
             src="${iframeSrc}" 
-            allow="fullscreen *; clipboard-write *" 
+            allow="autoplay *; fullscreen *; clipboard-write *" 
             allowfullscreen="allowfullscreen" 
             scrolling="no">
           </iframe>
         `;
         
-        // Exibe a tela de abertura
-        welcomeScreen.classList.remove('hidden');
+        mainContent.classList.remove('hidden');
         notFoundCard.classList.add('hidden');
+
+        // Tenta iniciar a música direto
+        tocarAudio();
+
+        // No celular, caso o navegador bloqueie, inicia no primeiro toque/clique no convite
+        document.body.addEventListener('click', tocarAudio, { once: true });
+        document.body.addEventListener('touchstart', tocarAudio, { once: true });
+
       } else {
-        welcomeScreen.classList.add('hidden');
         mainContent.classList.add('hidden');
         notFoundCard.classList.remove('hidden');
       }
-    }
-
-    function abrirConvite() {
-      // 1. Toca o áudio liberado pelo clique
-      audio.play().then(() => {
-        audioIcon.innerText = "🔊";
-      }).catch(err => {
-        console.log("Erro ao reproduzir áudio:", err);
-      });
-
-      // 2. Transição suave da tela de abertura para o convite
-      welcomeScreen.classList.add('fade-out');
-      mainContent.classList.remove('hidden');
-
-      setTimeout(() => {
-        welcomeScreen.classList.add('hidden');
-      }, 600);
     }
 
     function toggleAudio() {
