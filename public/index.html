@@ -113,36 +113,32 @@
           audioIcon.innerText = "🔊";
           triggerInvisivel.classList.add('hidden'); 
         }).catch(() => {
-          console.log("Aguardando interação no vidro...");
+          console.log("Aguardando interação do usuário no celular...");
         });
       }
     }
 
-    // A MÁGICA COM SUPORTE A ARRASTO
-    function iniciarAudioHack() {
+    // Função corrigida para não "surtar" o navegador
+    function iniciarAudioHack(event) {
+      // Se o evento for de encostar ou arrastar, a gente ignora para não dar erro
+      if (event && (event.type === 'touchstart' || event.type === 'touchmove')) {
+        return; 
+      }
+
       if (!audioIniciado) {
         audio.play().then(() => {
           audioIniciado = true;
           audioIcon.innerText = "🔊";
-          triggerInvisivel.classList.add('hidden'); // Destrói o vidro
-          
-          // Limpa os ouvintes de evento para não pesar a página depois
-          triggerInvisivel.removeEventListener('touchstart', iniciarAudioHack);
-          triggerInvisivel.removeEventListener('touchmove', iniciarAudioHack);
-          triggerInvisivel.removeEventListener('touchend', iniciarAudioHack);
-          triggerInvisivel.removeEventListener('click', iniciarAudioHack);
+          triggerInvisivel.classList.add('hidden'); // Quebra o vidro
         }).catch((err) => {
-          console.log("Celular bloqueou a tentativa:", err);
+          console.log("Bloqueado. O usuário precisa soltar o dedo:", err);
         });
       }
     }
 
-    // Agora ele ouve: Tocar, Arrastar, Soltar e Clicar!
-    // O { passive: true } garante que a tela não fique "travada" pro usuário.
-    triggerInvisivel.addEventListener('touchstart', iniciarAudioHack, { passive: true });
-    triggerInvisivel.addEventListener('touchmove', iniciarAudioHack, { passive: true });
-    triggerInvisivel.addEventListener('touchend', iniciarAudioHack, { passive: true });
-    triggerInvisivel.addEventListener('click', iniciarAudioHack, { passive: true });
+    // O navegador SÓ confia nesses dois (quando o dedo sai da tela ou clica)
+    triggerInvisivel.addEventListener('touchend', iniciarAudioHack);
+    triggerInvisivel.addEventListener('click', iniciarAudioHack);
 
     function toggleAudio() {
       if (audio.paused) {
