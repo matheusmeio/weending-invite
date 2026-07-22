@@ -111,34 +111,38 @@
         audio.play().then(() => {
           audioIniciado = true;
           audioIcon.innerText = "🔊";
-          triggerInvisivel.classList.add('hidden'); // Some com o vidro se já tocou
+          triggerInvisivel.classList.add('hidden'); 
         }).catch(() => {
-          console.log("Aguardando o toque no vidro...");
+          console.log("Aguardando interação no vidro...");
         });
       }
     }
 
-    // A MÁGICA CORRIGIDA
-    function iniciarAudioHack(event) {
-      // Previne duplo disparo caso o celular leia click e touchend ao mesmo tempo
-      if (event) event.preventDefault(); 
-
+    // A MÁGICA COM SUPORTE A ARRASTO
+    function iniciarAudioHack() {
       if (!audioIniciado) {
-        // Agora ele SÓ muda o ícone e tira o vidro SE a música tocar de verdade
         audio.play().then(() => {
           audioIniciado = true;
           audioIcon.innerText = "🔊";
           triggerInvisivel.classList.add('hidden'); // Destrói o vidro
+          
+          // Limpa os ouvintes de evento para não pesar a página depois
+          triggerInvisivel.removeEventListener('touchstart', iniciarAudioHack);
+          triggerInvisivel.removeEventListener('touchmove', iniciarAudioHack);
+          triggerInvisivel.removeEventListener('touchend', iniciarAudioHack);
+          triggerInvisivel.removeEventListener('click', iniciarAudioHack);
         }).catch((err) => {
           console.log("Celular bloqueou a tentativa:", err);
-          // Se falhar, o vidro continua lá para ele tentar de novo
         });
       }
     }
 
-    // Usando touchend e click, que são aprovados pelos bloqueadores de celular
-    triggerInvisivel.addEventListener('touchend', iniciarAudioHack);
-    triggerInvisivel.addEventListener('click', iniciarAudioHack);
+    // Agora ele ouve: Tocar, Arrastar, Soltar e Clicar!
+    // O { passive: true } garante que a tela não fique "travada" pro usuário.
+    triggerInvisivel.addEventListener('touchstart', iniciarAudioHack, { passive: true });
+    triggerInvisivel.addEventListener('touchmove', iniciarAudioHack, { passive: true });
+    triggerInvisivel.addEventListener('touchend', iniciarAudioHack, { passive: true });
+    triggerInvisivel.addEventListener('click', iniciarAudioHack, { passive: true });
 
     function toggleAudio() {
       if (audio.paused) {
