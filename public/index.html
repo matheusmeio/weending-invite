@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Convite Digital Interativo</title>
+
   <style>
     * {
       margin: 0;
@@ -19,62 +20,15 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    .iframe-container, iframe {
+    .iframe-container,
+    iframe {
       width: 100%;
       height: 100%;
       border: none;
     }
-
-    /* O Truque: Uma camada transparente que cobre a tela toda */
-    .hack-invisivel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 99999; /* Fica por cima de tudo */
-      background: transparent;
-      cursor: pointer;
-    }
-
-    /* Botão de Som Flutuante Discreto */
-    .audio-btn {
-      position: absolute;
-      top: 12px;
-      right: 15px;
-      z-index: 9999;
-      background: rgba(20, 20, 25, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(10px);
-    }
-
-    .hidden {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
-
-  <!-- Áudio -->
-  <audio id="bg-music" loop preload="auto">
-    <source src="musica.mp3" type="audio/mpeg">
-  </audio>
-
-  <!-- Camada que rouba o primeiro clique para tocar a música -->
-  <div id="trigger-invisivel" class="hack-invisivel"></div>
-
-  <!-- Botão de controle de áudio -->
-  <button id="audio-control" class="audio-btn hidden" onclick="toggleAudio()">
-    <span id="audio-icon">🎵</span> <span id="audio-text">Música</span>
-  </button>
 
   <div id="app" class="iframe-container"></div>
 
@@ -84,71 +38,30 @@
       "mariana-e-pedro": "abc123xyz"
     };
 
-    const audio = document.getElementById('bg-music');
-    const triggerInvisivel = document.getElementById('trigger-invisivel');
-    const audioBtn = document.getElementById('audio-control');
-    const audioIcon = document.getElementById('audio-icon');
-    let audioIniciado = false;
-
-    audio.volume = 0.2;
-
     function carregarConvite() {
       const params = new URLSearchParams(window.location.search);
-      let clienteKey = params.get('c');
+      let clienteKey = params.get("c");
 
       if (!clienteKey && window.location.hash) {
-        clienteKey = window.location.hash.replace('#', '');
+        clienteKey = window.location.hash.replace("#", "");
       }
 
-      const appContainer = document.getElementById('app');
+      const appContainer = document.getElementById("app");
 
       if (clienteKey && clientes[clienteKey]) {
         const heyzineId = clientes[clienteKey];
-        appContainer.innerHTML = `<iframe src="https://heyzine.com/flip-book/${heyzineId}.html" allow="autoplay; fullscreen" scrolling="no"></iframe>`;
-        audioBtn.classList.remove('hidden');
-        
-        // Tenta tocar automático no PC
-        audio.play().then(() => {
-          audioIniciado = true;
-          audioIcon.innerText = "🔊";
-          triggerInvisivel.classList.add('hidden'); 
-        }).catch(() => {
-          console.log("Aguardando interação do usuário no celular...");
-        });
+        appContainer.innerHTML = `
+          <iframe
+            src="https://heyzine.com/flip-book/${heyzineId}.html"
+            allow="fullscreen"
+            scrolling="no">
+          </iframe>
+        `;
       }
     }
 
-    // Função corrigida para não "surtar" o navegador
-    function iniciarAudioHack(event) {
-      // Se o evento for de encostar ou arrastar, a gente ignora para não dar erro
-      if (event && (event.type === 'touchstart' || event.type === 'touchmove')) {
-        return; 
-      }
-
-      if (!audioIniciado) {
-        audio.play().then(() => {
-          audioIniciado = true;
-          audioIcon.innerText = "🔊";
-          triggerInvisivel.classList.add('hidden'); // Quebra o vidro
-        }).catch((err) => {
-          console.log("Bloqueado. O usuário precisa soltar o dedo:", err);
-        });
-      }
-    }
-
-    
-
-    function toggleAudio() {
-      if (audio.paused) {
-        audio.play();
-        audioIcon.innerText = "🔊";
-      } else {
-        audio.pause();
-        audioIcon.innerText = "🔇";
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', carregarConvite);
+    window.addEventListener("DOMContentLoaded", carregarConvite);
   </script>
+
 </body>
 </html>
